@@ -50,11 +50,11 @@ func getISCSIInfo(req *csi.NodePublishVolumeRequest) (*iscsiDisk, error) {
 	}
 
 	bkportal := []string{}
+	portal := portalMounter(tp)
+	bkportal = append(bkportal, portal)
 
 	portalList := req.GetVolumeContext()["portals"]
 	if len(portalList) > 0 {
-		portal := portalMounter(tp)
-		bkportal = append(bkportal, portal)
 		portals := []string{}
 		if err := json.Unmarshal([]byte(portalList), &portals); err != nil {
 			return nil, err
