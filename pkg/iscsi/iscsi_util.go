@@ -35,6 +35,7 @@ func (util *ISCSIUtil) AttachDisk(b iscsiDiskMounter) (string, error) {
 		return "", fmt.Errorf("connector is nil")
 	}
 
+	klog.V(5).Infof("Connecting Disk")
 	devicePath, err := (*b.connector).Connect()
 	if err != nil {
 		return "", err
@@ -42,7 +43,8 @@ func (util *ISCSIUtil) AttachDisk(b iscsiDiskMounter) (string, error) {
 	if devicePath == "" {
 		return "", fmt.Errorf("connect reported success, but no path returned")
 	}
-	// Mount device
+
+	klog.V(5).Infof("Mounting Disk")
 	mntPath := b.targetPath
 	notMnt, err := b.mounter.IsLikelyNotMountPoint(mntPath)
 	if err != nil && !os.IsNotExist(err) {
@@ -58,7 +60,7 @@ func (util *ISCSIUtil) AttachDisk(b iscsiDiskMounter) (string, error) {
 		return "", err
 	}
 
-	// Persist iscsi disk config to json file for DetachDisk path
+	klog.V(5).Infof("Persisting Config to disk for DetachDisk")
 	iscsiInfoPath := getIscsiInfoPath(b.VolName)
 	err = iscsiLib.PersistConnector(b.connector, iscsiInfoPath)
 	if err != nil {
@@ -75,6 +77,7 @@ func (util *ISCSIUtil) AttachDisk(b iscsiDiskMounter) (string, error) {
 	}
 	options = append(options, b.mountOptions...)
 
+	klog.V(5).Infof("Formatting and Mounting")
 	err = b.mounter.FormatAndMount(devicePath, mntPath, b.fsType, options)
 	if err != nil {
 		klog.Errorf("iscsi: failed to mount iscsi volume %s [%s] to %s, error %v", devicePath, b.fsType, mntPath, err)

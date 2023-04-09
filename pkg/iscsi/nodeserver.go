@@ -21,6 +21,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	klog "k8s.io/klog/v2"
 )
 
 type nodeServer struct {
@@ -44,6 +45,7 @@ func (ns *nodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublis
 	}
 	diskMounter := getISCSIDiskMounter(iscsiInfo, req)
 
+	klog.V(5).Infof("Attaching disk")
 	util := &ISCSIUtil{}
 	if _, err := util.AttachDisk(*diskMounter); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
