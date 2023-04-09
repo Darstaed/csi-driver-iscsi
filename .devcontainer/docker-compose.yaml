@@ -1,0 +1,18 @@
+
+services:
+  csi-driver-iscsi:
+    build:
+      context: ./docker/
+    working_dir: /workspace
+    command: >
+      bash -c "tail -F anything"
+    environment:
+      - REGISTRY=darstaed
+      - REGISTRY_NAME=darstaed
+      - IMAGENAME=iscsiplugin
+      - IMAGE_VERSION=canary
+      - IMAGE_TAGS=canary
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ..:/workspace:delegated
+    # network_mode: host
