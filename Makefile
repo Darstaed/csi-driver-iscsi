@@ -22,11 +22,14 @@ GOBIN ?= $(GOPATH)/bin
 export GOPATH GOBIN
 
 REGISTRY ?= test
-IMAGENAME ?= iscsi-csi
+IMAGENAME ?= iscsiplugin
+IMAGE_VERSION ?= local
 # Output type of docker buildx build
 OUTPUT_TYPE ?= docker
 ARCH ?= amd64
 IMAGE_TAG = $(REGISTRY)/$(IMAGENAME):$(IMAGE_VERSION)
+
+ALL_ARCH.linux = arm64 amd64 ppc64le
 
 .PHONY: test-container
 test-container:
@@ -46,3 +49,30 @@ mod-check:
 clean:
 	go clean -mod=vendor -r -x
 	rm -f bin/iscsiplugin
+
+.PHONY: iscsi
+iscsi:
+	CGO_ENABLED=0 GOOS=linux GOARCH=$(ARCH) go build -a -ldflags "${LDFLAGS} ${EXT_LDFLAGS}" -mod vendor -o bin/${ARCH}/iscsiplugin ./cmd/iscsiplugin
+
+.PHONY: container-build
+container-build:
+	docker buildx build --pull --output=type=$(OUTPUT_TYPE) --platform="linux/$(ARCH)" \
+		--provenance=false --sbom=false \
+		-t $(IMAGE_TAG)-linux-$(ARCH) --build-arg ARCH=$(ARCH) .
+
+.PHONY: container
+container:
+	# enable qemu for arm64 build
+	# https://github.com/docker/buildx/issues/464#issuecomment-741507760
+	docker run --privileged --rm tonistiigi/binfmt --uninstall qemu-aarch64
+	docker run --rm --privileged tonistiigi/binfmt --install all
+	for arch in $(ALL_ARCH.linux); do \
+		ARCH=$${arch} $(MAKE) iscsi; \
+		ARCH=$${arch} $(MAKE) container-build; \
+	done
+
+.PHONY: push
+push:
+	docker manifest create --amend $(IMAGE_TAG) $(foreach osarch, $(ALL_ARCH.linux), $(IMAGE_TAG)-linux-${osarch})
+	docker manifest push --purge $(IMAGE_TAG)
+	docker manifest inspect $(IMAGE_TAG)
