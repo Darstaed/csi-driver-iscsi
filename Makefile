@@ -29,7 +29,7 @@ OUTPUT_TYPE ?= docker
 ARCH ?= amd64
 IMAGE_TAG = $(REGISTRY)/$(IMAGENAME):$(IMAGE_VERSION)
 
-ALL_ARCH.linux = arm64 amd64 ppc64le
+ALL_ARCH.linux = arm64 amd64
 
 .PHONY: test-container
 test-container:
@@ -73,6 +73,9 @@ container:
 
 .PHONY: push
 push:
+	for arch in $(ALL_ARCH.linux); do \
+		docker push $(IMAGE_TAG)-linux-$$arch; \
+	done 
 	docker manifest create --amend $(IMAGE_TAG) $(foreach osarch, $(ALL_ARCH.linux), $(IMAGE_TAG)-linux-${osarch})
-	docker manifest push --purge $(IMAGE_TAG)
+	docker manifest push $(IMAGE_TAG)
 	docker manifest inspect $(IMAGE_TAG)

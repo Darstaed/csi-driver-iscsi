@@ -111,6 +111,7 @@ func buildISCSIConnector(iscsiInfo *iscsiDisk) *iscsiLib.Connector {
 		TargetIqn:     iscsiInfo.Iqn,
 		TargetPortals: iscsiInfo.Portals,
 		Lun:           iscsiInfo.lun,
+		DoDiscovery:   true,
 	}
 
 	if iscsiInfo.sessionSecret != (iscsiLib.Secrets{}) {
